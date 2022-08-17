@@ -253,8 +253,8 @@ def tg_summary():
     while True:
         time.sleep(5)
         for chat_id, chat in chats.chats.items():
-            if datetime.datetime.now() > chat.last_update + datetime.timedelta(seconds=chat.timespan):
-                print(f"{chat.chat_id}: {chat.count}")
+            if datetime.datetime.now() > chat.last_update + datetime.timedelta(seconds=chat.timespan):)
+                print(f"{chat.chat_id}: {chat.lon}/{chat.lat} {chat.count} - {chat.last_update}")
                 if chat.count > 0:
                     bot.send_message(chat.chat_id, '⚡' * chat.count)
                     chat.reset_count()
