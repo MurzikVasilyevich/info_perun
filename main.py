@@ -210,7 +210,6 @@ def send_text(message):
     session = Session()
     chat = session.query(Chat).filter(Chat.chat_id == message.chat.id).first()
 
-    bot.send_message(message.chat.id, reply_markup=types.ReplyKeyboardRemove())
 
     pattern = re.compile("^(\d)+км$")
     if pattern.match(message.text):
@@ -218,7 +217,7 @@ def send_text(message):
         session.commit()
         session.close()
         chats.get_from_base()
-        bot.send_message(message.chat.id, f"Вибрано радіус відстані {chat.radius}км")
+        bot.send_message(message.chat.id, f"Вибрано радіус відстані {chat.radius}км", reply_markup=types.ReplyKeyboardRemove())
         return
 
     pattern = re.compile("^(\d)+сек$")
@@ -227,7 +226,7 @@ def send_text(message):
         session.commit()
         session.close()
         chats.get_from_base()
-        bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} секунд")
+        bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} секунд", reply_markup=types.ReplyKeyboardRemove())
         return
 
     pattern = re.compile("^(\d)+хв$")
@@ -236,7 +235,7 @@ def send_text(message):
         session.commit()
         session.close()
         chats.get_from_base()
-        bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} хвилин")
+        bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} хвилин", reply_markup=types.ReplyKeyboardRemove())
         return
 
 
@@ -252,7 +251,7 @@ def add_location(message):
     chat.lon = lon
     session.commit()
     chats.get_from_base()
-    bot.send_message(message.chat.id, 'Локація встановлена')
+    bot.send_message(message.chat.id, 'Локація встановлена', reply_markup=types.ReplyKeyboardRemove())
     session.close()
 
 
