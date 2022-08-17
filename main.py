@@ -153,18 +153,28 @@ def add_user(message):
     if session.query(Chat).filter(Chat.chat_id == chat_id).count() == 0:
         session.add(Chat(chat_id=chat_id, lat=0, lon=0, timespan=60, radius=100))
         session.commit()
+        session.close()
         chats.get_from_base()
         bot.send_message(chat_id=chat_id, text='Вас додано до користувачів')
     print(chat_id)
-    bot.send_message(message.chat.id, 'Задайте, будь ласка локацію, за допомогою повідомлення "Поділитись локацією"')
-    session.close()
+    request_location(chat_id, message)
+
+
+def request_location(chat_id, message):
+    bot.send_message(message.chat.id,
+                     'Задайте, будь ласка локацію, за допомогою повідомлення "Поділитись локацією", або надійслати своє розташування на карті 📍')
+    keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    button_geo = types.KeyboardButton(text='Поділитись локацією', request_location=True)
+    keyboard.add(button_geo)
+    bot.send_message(chat_id, 'Ви можете вибрати локацію за допомогою кнопки "Поділитись локацією"',
+                     reply_markup=keyboard)
 
 
 @bot.message_handler(commands=['location'])
 def set_location(message):
     chat_id = message.chat.id
     print(chat_id)
-    bot.send_message(message.chat.id, 'Задайте, будь ласка локацію, за допомогою повідомлення "Поділитись локацією"')
+    request_location(chat_id, message)
 
 
 @bot.message_handler(commands=['radius'])
@@ -199,11 +209,14 @@ def set_timespan(message):
 def send_text(message):
     session = Session()
     chat = session.query(Chat).filter(Chat.chat_id == message.chat.id).first()
-    pattern = re.compile("^(\d)+км$")
 
+    bot.send_message(message.chat.id, reply_markup=types.ReplyKeyboardRemove())
+
+    pattern = re.compile("^(\d)+км$")
     if pattern.match(message.text):
         chat.radius = int(message.text[:-2])
         session.commit()
+        session.close()
         chats.get_from_base()
         bot.send_message(message.chat.id, f"Вибрано радіус відстані {chat.radius}км")
         return
@@ -212,6 +225,7 @@ def send_text(message):
     if pattern.match(message.text):
         chat.timespan = int(message.text[:-3])
         session.commit()
+        session.close()
         chats.get_from_base()
         bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} секунд")
         return
@@ -220,11 +234,11 @@ def send_text(message):
     if pattern.match(message.text):
         chat.timespan = int(message.text[:-2]) * 60
         session.commit()
+        session.close()
         chats.get_from_base()
         bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} хвилин")
         return
 
-    session.close()
 
 
 @bot.message_handler(content_types=['location'])
