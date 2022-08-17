@@ -6,4 +6,6 @@ class TELEGRAM:
 
 
 class DATABASE:
-    DB_URL = os.environ["DATABASE_URL"]
+    __uri = os.environ["DATABASE_URL"]
+    DB_URL = __uri.replace("postgres://", "postgresql://", 1) if __uri.startswith("postgres://") else __uri
+
