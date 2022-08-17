@@ -60,12 +60,17 @@ class Chats:
         self.chats[chat_id] = chat.chat()
 
     def get_from_base(self):
-        self.chats.clear()
         session = Session()
         chats_base = session.query(Chat).all()
         session.close()
         for chat in chats_base:
-            self.add(chat.chat_id, chat)
+            if chat.chat_id not in self.chats:
+                self.add(chat.chat_id, chat)
+            else:
+                self.chats[chat.chat_id].lat = chat.lat
+                self.chats[chat.chat_id].lon = chat.lon
+                self.chats[chat.chat_id].timespan = chat.timespan
+                self.chats[chat.chat_id].radius = chat.radius
 
 
 class Strike:
@@ -250,7 +255,6 @@ def tg_summary():
         for chat_id, chat in chats.chats.items():
             if datetime.datetime.now() > chat.last_update + datetime.timedelta(seconds=chat.timespan):
                 print(f"{chat.chat_id}: {chat.count}")
-
                 if chat.count > 0:
                     bot.send_message(chat.chat_id, '⚡' * chat.count)
                     chat.reset_count()
@@ -258,6 +262,7 @@ def tg_summary():
                     chat.reset_count()
             else:
                 print(chat.chat_id, 'not time')
+        chats.get_from_base()
 
 
 def main():
