@@ -297,8 +297,8 @@ def tg_summary():
             if datetime.datetime.now() > chat.last_update + datetime.timedelta(seconds=chat.timespan):
                 print(f"{chat.chat_id}: {chat.lat}/{chat.lon} {chat.count} - {chat.last_update}")
                 if chat.count > 0:
-                    text = f"{'⚡'*chat.count}<br><a href='https://map.blitzortung.org/#10/{chat.lat}/{chat.lon}'>🗺</a>"
-                    bot.send_message(chat.chat_id, text, parse_mode = "HTML")
+                    text = f"{'⚡'*chat.count}"
+                    bot.send_message(chat.chat_id, text, parse_mode="HTML")
                     chat.reset_count()
                 else:
                     chat.reset_count()
