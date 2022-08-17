@@ -3,6 +3,7 @@ import json
 import re
 import threading
 import time
+import rel
 
 import telebot
 import websocket
@@ -17,6 +18,7 @@ import settings as s
 
 engine = create_engine(s.DATABASE.DB_URL, echo=True)
 Base = declarative_base()
+
 
 # start - Розпочати
 # info - Переглянути поточні налаштування
@@ -110,12 +112,6 @@ def on_open(ws):
     ws.send('{"a":767}')
 
 
-def on_close(ws):
-    print("Retry : %s" % time.ctime())
-    time.sleep(10)
-    connect_websocket()
-
-
 def prepare(b):
     a = None
     e = {}
@@ -134,13 +130,6 @@ def prepare(b):
         o += 1
         f = a
     return "".join(g)
-
-
-def connect_websocket():
-    ws = websocket.WebSocketApp(s.WEBSOCKET.URL, on_message=on_message, on_open=on_open, on_close = on_close)
-    wst = threading.Thread(target=ws.run_forever)
-    wst.daemon = True
-    wst.start()
 
 
 key = s.TELEGRAM.API_KEY
@@ -169,7 +158,8 @@ def send_map(message):
     if chat is None:
         bot.send_message(chat_id, 'Вы не зарегистрированы в боте')
         return
-    bot.send_message(chat_id, text=f"<a href='https://map.blitzortung.org/#10/{chat.lat}/{chat.lon}'>🗺</a>", parse_mode="HTML")
+    bot.send_message(chat_id, text=f"<a href='https://map.blitzortung.org/#10/{chat.lat}/{chat.lon}'>🗺</a>",
+                     parse_mode="HTML")
     session.close()
 
 
@@ -297,7 +287,7 @@ def tg_summary():
             if datetime.datetime.now() > chat.last_update + datetime.timedelta(seconds=chat.timespan):
                 print(f"{chat.chat_id}: {chat.lat}/{chat.lon} {chat.count} - {chat.last_update}")
                 if chat.count > 0:
-                    text = f"{'⚡'*chat.count}"
+                    text = f"{'⚡' * chat.count}"
                     bot.send_message(chat.chat_id, text, parse_mode="HTML")
                     chat.reset_count()
                 else:
@@ -307,17 +297,21 @@ def tg_summary():
         chats.get_from_base()
 
 
+def ws_loop():
+    print('ws_loop')
+    ws = websocket.WebSocketApp(s.WEBSOCKET.URL, on_message=on_message, on_open=on_open)
+    ws.run_forever(dispatcher=rel)
+    rel.signal(2, rel.abort)
+    rel.dispatch()
+
+
 def main():
     tg_thread = threading.Thread(target=bot.infinity_polling)
     tg_summary_thread = threading.Thread(target=tg_summary)
+    ws_thread = threading.Thread(target=ws_loop)
     tg_thread.start()
-    try:
-        connect_websocket()
-    except Exception as err:
-        print(err)
-        print("connect failed")
-
     tg_summary_thread.start()
+    ws_thread.start()
 
 
 if __name__ == '__main__':
