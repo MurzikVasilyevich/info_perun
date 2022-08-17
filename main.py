@@ -15,7 +15,7 @@ from telebot import types
 
 import settings as s
 
-engine = create_engine('sqlite:///blitz.db?check_same_thread=False', echo=True)
+engine = create_engine(s.DATABASE.DB_URL, echo=True)
 Base = declarative_base()
 
 
@@ -90,11 +90,12 @@ def on_message(ws, message):
     dec = prepare(message)
     j = json.loads(dec)
     strike = (j['lat'], j['lon'])
+    print(strike)
     for chat_id, chat in chats.chats.items():
         location = (chat.lat, chat.lon)
         if distance.distance(location, strike).km < chat.radius:
             chat.increment_count()
-            print(chat.chat_id, 'strike')
+            print(chat.chat_id, 'strike ⚡')
 
 
 def on_open(ws):
@@ -254,7 +255,7 @@ def tg_summary():
         time.sleep(5)
         for chat_id, chat in chats.chats.items():
             if datetime.datetime.now() > chat.last_update + datetime.timedelta(seconds=chat.timespan):
-                print(f"{chat.chat_id}: {chat.lon}/{chat.lat} {chat.count} - {chat.last_update}")
+                print(f"{chat.chat_id}: {chat.lat}/{chat.lon} {chat.count} - {chat.last_update}")
                 if chat.count > 0:
                     bot.send_message(chat.chat_id, '⚡' * chat.count)
                     chat.reset_count()
