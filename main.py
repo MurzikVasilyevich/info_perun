@@ -301,7 +301,7 @@ def ws_loop():
     print('ws_loop')
     ws = websocket.WebSocketApp(s.WEBSOCKET.URL, on_message=on_message, on_open=on_open)
     ws.run_forever(dispatcher=rel)
-    rel.signal(2, rel.abort)
+    # rel.signal(2, rel.abort)
     rel.dispatch()
 
 
