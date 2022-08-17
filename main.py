@@ -123,9 +123,8 @@ def prepare(b):
 
 
 def ws_loop():
-    ws = websocket.WebSocketApp("wss://ws8.blitzortung.org/",
-                                on_message=on_message,
-                                on_open=on_open)
+    print('ws_loop')
+    ws = websocket.WebSocketApp(s.WEBSOCKET.URL, on_message=on_message, on_open=on_open)
     ws.run_forever()
 
 
