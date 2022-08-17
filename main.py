@@ -18,6 +18,13 @@ import settings as s
 engine = create_engine(s.DATABASE.DB_URL, echo=True)
 Base = declarative_base()
 
+# start - Розпочати
+# info - Переглянути поточні налаштування
+# location - Задати локацію
+# radius - Задати зону охоплення
+# refresh - Задати частоту оновлення
+# help - Про бота
+
 
 class ChatLocal:
     def __init__(self, chat_id, lat, lon, timespan=60, radius=100, count=0, last_update=datetime.datetime.now()):
@@ -102,6 +109,12 @@ def on_open(ws):
     ws.send('{"a":767}')
 
 
+def on_close(ws):
+    print("Retry : %s" % time.ctime())
+    time.sleep(10)
+    connect_websocket()
+
+
 def prepare(b):
     a = None
     e = {}
@@ -122,10 +135,17 @@ def prepare(b):
     return "".join(g)
 
 
-def ws_loop():
-    print('ws_loop')
-    ws = websocket.WebSocketApp(s.WEBSOCKET.URL, on_message=on_message, on_open=on_open)
-    ws.run_forever()
+# def ws_loop():
+#     print('ws_loop')
+#     ws = websocket.WebSocketApp(s.WEBSOCKET.URL, on_message=on_message, on_open=on_open)
+#     ws.run_forever()
+
+
+def connect_websocket():
+    ws = websocket.WebSocketApp(s.WEBSOCKET.URL, on_message=on_message, on_open=on_open, on_close = on_close)
+    wst = threading.Thread(target=ws.run_forever)
+    wst.daemon = True
+    wst.start()
 
 
 key = s.TELEGRAM.API_KEY
@@ -210,13 +230,13 @@ def send_text(message):
     session = Session()
     chat = session.query(Chat).filter(Chat.chat_id == message.chat.id).first()
 
-
     pattern = re.compile("^(\d)+км$")
     if pattern.match(message.text):
         chat.radius = int(message.text[:-2])
         session.commit()
         chats.get_from_base()
-        bot.send_message(message.chat.id, f"Вибрано радіус відстані {chat.radius}км", reply_markup=types.ReplyKeyboardRemove())
+        bot.send_message(message.chat.id, f"Вибрано радіус відстані {chat.radius}км",
+                         reply_markup=types.ReplyKeyboardRemove())
         session.close()
         return
 
@@ -225,7 +245,8 @@ def send_text(message):
         chat.timespan = int(message.text[:-3])
         session.commit()
         chats.get_from_base()
-        bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} секунд", reply_markup=types.ReplyKeyboardRemove())
+        bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} секунд",
+                         reply_markup=types.ReplyKeyboardRemove())
         session.close()
         return
 
@@ -234,10 +255,10 @@ def send_text(message):
         chat.timespan = int(message.text[:-2]) * 60
         session.commit()
         chats.get_from_base()
-        bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} хвилин", reply_markup=types.ReplyKeyboardRemove())
+        bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} хвилин",
+                         reply_markup=types.ReplyKeyboardRemove())
         session.close()
         return
-
 
 
 @bot.message_handler(content_types=['location'])
@@ -280,10 +301,16 @@ def tg_summary():
 
 def main():
     tg_thread = threading.Thread(target=bot.infinity_polling)
-    ws_thread = threading.Thread(target=ws_loop)
     tg_summary_thread = threading.Thread(target=tg_summary)
     tg_thread.start()
-    ws_thread.start()
+    try:
+        connect_websocket()
+    except Exception as err:
+        print(err)
+        print("connect failed")
+
+    # ws_thread = threading.Thread(target=ws_loop)
+    # ws_thread.start()
     tg_summary_thread.start()
 
 
