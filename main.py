@@ -215,27 +215,27 @@ def send_text(message):
     if pattern.match(message.text):
         chat.radius = int(message.text[:-2])
         session.commit()
-        session.close()
         chats.get_from_base()
         bot.send_message(message.chat.id, f"Вибрано радіус відстані {chat.radius}км", reply_markup=types.ReplyKeyboardRemove())
+        session.close()
         return
 
     pattern = re.compile("^(\d)+сек$")
     if pattern.match(message.text):
         chat.timespan = int(message.text[:-3])
         session.commit()
-        session.close()
         chats.get_from_base()
         bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} секунд", reply_markup=types.ReplyKeyboardRemove())
+        session.close()
         return
 
     pattern = re.compile("^(\d)+хв$")
     if pattern.match(message.text):
         chat.timespan = int(message.text[:-2]) * 60
         session.commit()
-        session.close()
         chats.get_from_base()
         bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} хвилин", reply_markup=types.ReplyKeyboardRemove())
+        session.close()
         return
 
 
