@@ -115,7 +115,7 @@ def on_open(ws):
 def prepare(b):
     a = None
     e = {}
-    d = b
+    d = list(b)
     c = d[0]
     f = c
     g = [c]
@@ -123,7 +123,7 @@ def prepare(b):
     o = h
     for b in range(1, len(d)):
         a = ord(d[b][0])
-        a = d[b] if h > a else (e[a] if e[a] else f + c)
+        a = d[b] if h > a else (e[a] if (a in e) else f + c)
         g.append(a)
         c = a[0]
         e[o] = f + c
