@@ -23,6 +23,7 @@ Base = declarative_base()
 # location - Задати локацію
 # radius - Задати зону охоплення
 # refresh - Задати частоту оновлення
+# map - Переглянути карту
 # help - Про бота
 
 
@@ -135,12 +136,6 @@ def prepare(b):
     return "".join(g)
 
 
-# def ws_loop():
-#     print('ws_loop')
-#     ws = websocket.WebSocketApp(s.WEBSOCKET.URL, on_message=on_message, on_open=on_open)
-#     ws.run_forever()
-
-
 def connect_websocket():
     ws = websocket.WebSocketApp(s.WEBSOCKET.URL, on_message=on_message, on_open=on_open, on_close = on_close)
     wst = threading.Thread(target=ws.run_forever)
@@ -163,6 +158,18 @@ def info(message):
     bot.send_message(chat_id,
                      f"Ви отримуєте інформацію про кількість блискавок у радіусі {str(chat.radius)}км від наступної точки кожні {str(chat.timespan)} секунд")
     bot.send_location(chat_id, chat.lat, chat.lon, horizontal_accuracy=chat.radius * 1000)
+    session.close()
+
+
+@bot.message_handler(commands=['map'])
+def send_map(message):
+    session = Session()
+    chat_id = message.chat.id
+    chat = session.query(Chat).filter(Chat.chat_id == chat_id).first()
+    if chat is None:
+        bot.send_message(chat_id, 'Вы не зарегистрированы в боте')
+        return
+    bot.send_message(chat_id, text=f"<a href='https://map.blitzortung.org/#10/{chat.lat}/{chat.lon}'>🗺</a>", parse_mode="HTML")
     session.close()
 
 
@@ -290,7 +297,8 @@ def tg_summary():
             if datetime.datetime.now() > chat.last_update + datetime.timedelta(seconds=chat.timespan):
                 print(f"{chat.chat_id}: {chat.lat}/{chat.lon} {chat.count} - {chat.last_update}")
                 if chat.count > 0:
-                    bot.send_message(chat.chat_id, '⚡' * chat.count)
+                    text = f"{'⚡'*chat.count}<br><a href='https://map.blitzortung.org/#10/{chat.lat}/{chat.lon}'>🗺</a>", parse_mode = "HTML"
+                    bot.send_message(chat.chat_id, text)
                     chat.reset_count()
                 else:
                     chat.reset_count()
@@ -309,8 +317,6 @@ def main():
         print(err)
         print("connect failed")
 
-    # ws_thread = threading.Thread(target=ws_loop)
-    # ws_thread.start()
     tg_summary_thread.start()
 
 
