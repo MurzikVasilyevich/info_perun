@@ -259,7 +259,7 @@ def send_text(message):
 
     pattern = re.compile("^(\d)+хв$")
     if pattern.match(message.text):
-        chat.timespan = int(message.text[:-2]) * 60
+        chat.timespan = int(message.text[:-2])
         session.commit()
         chats.get_from_base()
         bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} хвилин",
