@@ -274,7 +274,11 @@ def tg_summary():
                     stop = chat.last_update + datetime.timedelta(seconds=chat.timespan)
                     timestamp = f"{start.strftime('%H:%M:%S')}-{stop.strftime('%H:%M:%S')}"
                     text = f"{'⚡' * chat.count}\n{timestamp}"
-                    bot.send_message(chat.chat_id, text, parse_mode="HTML")
+                    try:
+                        bot.send_message(chat.chat_id, text, parse_mode="HTML")
+                    except Exception as e:
+                        print(e)
+                        pass
                     chat.reset_count()
                 else:
                     chat.reset_count()
