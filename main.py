@@ -311,10 +311,11 @@ def wss_client():
 
 def main():
     tg_thread = threading.Thread(target=bot.infinity_polling)
-    tg_summary_thread = threading.Thread(target=tg_summary)
     tg_thread.start()
+    tg_summary_thread = threading.Thread(target=tg_summary)
     tg_summary_thread.start()
-    wss_client()
+    client = threading.Thread(target=wss_client)
+    client.start()
 
 
 if __name__ == '__main__':
