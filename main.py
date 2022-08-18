@@ -3,17 +3,12 @@ import json
 import re
 import threading
 import time
-import rel
 
 import telebot
-# import websocket
 import websockets
 from geopy import distance
-from sqlalchemy import Column, Integer, Float
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker
-from telebot import types
+from sqlalchemy import Column, Integer, Float, create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 import settings as s
 
@@ -165,8 +160,8 @@ def add_user(message):
 def request_location(chat_id, message):
     bot.send_message(message.chat.id,
                      'Задайте, будь ласка локацію, за допомогою повідомлення "Поділитись локацією", або надійслати своє розташування на карті 📍')
-    keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-    button_geo = types.KeyboardButton(text='Поділитись локацією', request_location=True)
+    keyboard = telebot.types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    button_geo = telebot.types.KeyboardButton(text='Поділитись локацією', request_location=True)
     keyboard.add(button_geo)
     bot.send_message(chat_id, 'Ви можете вибрати локацію за допомогою кнопки "Поділитись локацією"',
                      reply_markup=keyboard)
