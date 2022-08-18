@@ -28,7 +28,8 @@ Base = declarative_base()
 
 
 class ChatLocal:
-    def __init__(self, chat_id, lat, lon, timespan=60, radius=100, count=0, last_update=datetime.datetime.now()):
+    def __init__(self, chat_id, lat, lon, timespan=s.DEFAULTS.TIMESPAN, radius=s.DEFAULTS.RADIUS,
+                 count=0, last_update=datetime.datetime.now()):
         self.chat_id = chat_id
         self.lat = lat
         self.lon = lon
@@ -150,7 +151,7 @@ def add_user(message):
     session = Session()
     chat_id = message.chat.id
     if session.query(Chat).filter(Chat.chat_id == chat_id).count() == 0:
-        session.add(Chat(chat_id=chat_id, lat=0, lon=0, timespan=60, radius=100))
+        session.add(Chat(chat_id=chat_id, lat=0, lon=0, timespan=s.DEFAULTS.TIMESPAN, radius=s.DEFAULTS.RADIUS))
         session.commit()
         session.close()
         chats.get_from_base()
@@ -269,7 +270,10 @@ def tg_summary():
             if datetime.datetime.now() > chat.last_update + datetime.timedelta(seconds=chat.timespan):
                 print(f"{chat.chat_id}: {chat.lat}/{chat.lon} {chat.count} - {chat.last_update}")
                 if chat.count > 0:
-                    text = f"{'⚡' * chat.count}"
+                    start = chat.last_update
+                    stop = chat.last_update + datetime.timedelta(seconds=chat.timespan)
+                    timestamp = f"{start.strftime('%H:%M:%S')}-{stop.strftime('%H:%M:%S')}"
+                    text = f"<pre>{'⚡' * chat.count}\n{timestamp}</pre>"
                     bot.send_message(chat.chat_id, text, parse_mode="HTML")
                     chat.reset_count()
                 else:

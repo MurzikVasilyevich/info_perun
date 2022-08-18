@@ -9,5 +9,11 @@ class DATABASE:
     __uri = os.environ["DATABASE_URL"]
     DB_URL = __uri.replace("postgres://", "postgresql://", 1) if __uri.startswith("postgres://") else __uri
 
+
 class WEBSOCKET:
     URL = os.environ["WEBSOCKET_URL"]
+
+
+class DEFAULTS:
+    TIMESPAN = 60
+    RADIUS = 100
