@@ -6,7 +6,8 @@ import time
 import rel
 
 import telebot
-import websocket
+# import websocket
+import websockets
 from geopy import distance
 from sqlalchemy import Column, Integer, Float
 from sqlalchemy import create_engine
@@ -94,22 +95,6 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 Session.configure(bind=engine)
 chats = Chats()
-
-
-def on_message(ws, message):
-    dec = prepare(message)
-    j = json.loads(dec)
-    strike = (j['lat'], j['lon'])
-    print(strike)
-    for chat_id, chat in chats.chats.items():
-        location = (chat.lat, chat.lon)
-        if distance.distance(location, strike).km < chat.radius:
-            chat.increment_count()
-            print(chat.chat_id, 'strike ⚡')
-
-
-def on_open(ws):
-    ws.send('{"a":767}')
 
 
 def prepare(b):
@@ -297,12 +282,28 @@ def tg_summary():
         chats.get_from_base()
 
 
-def ws_loop():
-    print('ws_loop')
-    ws = websocket.WebSocketApp(s.WEBSOCKET.URL, on_message=on_message, on_open=on_open)
-    ws.run_forever(dispatcher=rel)
-    # rel.signal(2, rel.abort)
-    rel.dispatch()
+async def ws_loop():
+    async for websocket in websockets.connect("wss://ws8.blitzortung.org/"):
+        try:
+            await websocket.send('{"a":767}')
+            message = await websocket.recv()
+            await process_wss(message)
+
+        except websockets.ConnectionClosed:
+            print("Connection closed")
+            continue
+
+
+async def process_wss(message):
+    dec = prepare(message)
+    j = json.loads(dec)
+    strike = (j['lat'], j['lon'])
+    print(strike)
+    for chat_id, chat in chats.chats.items():
+        location = (chat.lat, chat.lon)
+        if distance.distance(location, strike).km < chat.radius:
+            chat.increment_count()
+            print(chat.chat_id, 'strike ⚡')
 
 
 def main():

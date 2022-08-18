@@ -1,6 +1,6 @@
-websocket-client
 geopy
 sqlalchemy
 pyTelegramBotAPI
 psycopg2
-rel
+websockets
+asyncio
