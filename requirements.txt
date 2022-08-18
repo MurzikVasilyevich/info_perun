@@ -5,3 +5,4 @@ websockets
 asyncio
 pytz
 timezonefinder
+psycopg2 # for postgresql

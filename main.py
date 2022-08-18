@@ -21,13 +21,15 @@ engine = create_engine(s.DATABASE.DB_URL, echo=True)
 Base = declarative_base()
 
 
-# start - Розпочати
-# info - Переглянути поточні налаштування
-# location - Задати локацію
-# radius - Задати зону охоплення
-# refresh - Задати частоту оновлення
-# map - Переглянути карту
-# help - Про бота
+"""
+start - Розпочати
+info - Переглянути поточні налаштування
+location - Задати локацію
+radius - Задати зону охоплення
+refresh - Задати частоту оновлення
+map - Переглянути карту
+help - Про бота
+"""
 
 
 class ChatLocal:
