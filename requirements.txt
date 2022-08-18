@@ -1,6 +1,7 @@
 geopy
 sqlalchemy
 pyTelegramBotAPI
-psycopg2
 websockets
 asyncio
+pytz
+timezonefinder

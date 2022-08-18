@@ -5,12 +5,15 @@ import threading
 import time
 
 import asyncio
+
+import pytz
 import telebot
 from telebot import types
 import websockets
 from geopy import distance
 from sqlalchemy import Column, Integer, Float, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from timezonefinder import TimezoneFinder
 
 import settings as s
 
@@ -29,7 +32,7 @@ Base = declarative_base()
 
 class ChatLocal:
     def __init__(self, chat_id, lat, lon, timespan=s.DEFAULTS.TIMESPAN, radius=s.DEFAULTS.RADIUS,
-                 count=0, last_update=datetime.datetime.now()):
+                 count=0, last_update=datetime.datetime.utcnow()):
         self.chat_id = chat_id
         self.lat = lat
         self.lon = lon
@@ -43,7 +46,7 @@ class ChatLocal:
 
     def reset_count(self):
         self.count = 0
-        self.last_update = datetime.datetime.now()
+        self.last_update = datetime.datetime.utcnow()
 
 
 class Chat(Base):
@@ -160,6 +163,12 @@ def add_user(message):
     request_location(chat_id, message)
 
 
+def utc_to_local(utc_dt, lat, lng):
+    timezone = TimezoneFinder().timezone_at(lng=lng, lat=lat)
+    utc_time = datetime.datetime.utcnow()
+    return utc_dt + pytz.timezone(timezone).localize(utc_time).utcoffset()
+
+
 def request_location(chat_id, message):
     bot.send_message(message.chat.id,
                      'Задайте, будь ласка локацію, за допомогою повідомлення "Поділитись локацією", або надійслати своє розташування на карті 📍')
@@ -232,10 +241,11 @@ def send_text(message):
 
     pattern = re.compile("^(\d)+хв$")
     if pattern.match(message.text):
-        chat.timespan = int(message.text[:-2])
+        t = int(message.text[:-2])
+        chat.timespan = t * 60
         session.commit()
         chats.get_from_base()
-        bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} хвилин",
+        bot.send_message(message.chat.id, f"Вибрано оновлення кожні {t} хвилин",
                          reply_markup=types.ReplyKeyboardRemove())
         session.close()
         return
@@ -267,13 +277,15 @@ def tg_summary():
     while True:
         time.sleep(5)
         for chat_id, chat in chats.chats.items():
-            if datetime.datetime.now() > chat.last_update + datetime.timedelta(seconds=chat.timespan):
+            print(chat.timespan)
+            if datetime.datetime.utcnow() > chat.last_update + datetime.timedelta(seconds=chat.timespan):
                 print(f"{chat.chat_id}: {chat.lat}/{chat.lon} {chat.count} - {chat.last_update}")
                 if chat.count > 0:
-                    # start = chat.last_update
-                    # stop = chat.last_update + datetime.timedelta(seconds=chat.timespan)
-                    # timestamp = f"{start.strftime('%H:%M:%S')}-{stop.strftime('%H:%M:%S')}"
-                    text = f"{'⚡' * chat.count}"
+                    start = utc_to_local(chat.last_update, chat.lat, chat.lon)
+                    stop = utc_to_local(chat.last_update + datetime.timedelta(seconds=chat.timespan), chat.lat, chat.lon)
+                    format = '%H:%M:%S' if chat.timespan < 60 else '%H:%M'
+                    timestamp = f"{start.strftime(format)}-{stop.strftime(format)}"
+                    text = f"{'⚡' * chat.count}\n{timestamp}"
                     try:
                         bot.send_message(chat.chat_id, text, parse_mode="HTML")
                     except Exception as e:
@@ -288,7 +300,7 @@ def tg_summary():
 
 
 async def ws_loop():
-    async for websocket in websockets.connect("wss://ws8.blitzortung.org/"):
+    async for websocket in websockets.connect(s.WEBSOCKET.URL):
         try:
             await websocket.send('{"a":767}')
             message = await websocket.recv()
