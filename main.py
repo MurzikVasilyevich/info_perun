@@ -303,7 +303,7 @@ async def process_wss(message):
     dec = prepare(message)
     j = json.loads(dec)
     strike = (j['lat'], j['lon'])
-    print(strike)
+    # print(strike)
     for chat_id, chat in chats.chats.items():
         location = (chat.lat, chat.lon)
         if distance.distance(location, strike).km < chat.radius:
