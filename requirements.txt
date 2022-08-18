@@ -4,4 +4,3 @@ pyTelegramBotAPI
 psycopg2
 websockets
 asyncio
-newrelic
