@@ -4,6 +4,7 @@ import re
 import threading
 import time
 
+import asyncio
 import telebot
 import websockets
 from geopy import distance
@@ -301,13 +302,19 @@ async def process_wss(message):
             print(chat.chat_id, 'strike ⚡')
 
 
+def wss_client():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(ws_loop())
+    loop.close()
+
+
 def main():
     tg_thread = threading.Thread(target=bot.infinity_polling)
     tg_summary_thread = threading.Thread(target=tg_summary)
-    ws_thread = threading.Thread(target=ws_loop)
     tg_thread.start()
     tg_summary_thread.start()
-    ws_thread.start()
+    wss_client()
 
 
 if __name__ == '__main__':
