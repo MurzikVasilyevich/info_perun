@@ -270,10 +270,10 @@ def tg_summary():
             if datetime.datetime.now() > chat.last_update + datetime.timedelta(seconds=chat.timespan):
                 print(f"{chat.chat_id}: {chat.lat}/{chat.lon} {chat.count} - {chat.last_update}")
                 if chat.count > 0:
-                    start = chat.last_update
-                    stop = chat.last_update + datetime.timedelta(seconds=chat.timespan)
-                    timestamp = f"{start.strftime('%H:%M:%S')}-{stop.strftime('%H:%M:%S')}"
-                    text = f"{'⚡' * chat.count}\n{timestamp}"
+                    # start = chat.last_update
+                    # stop = chat.last_update + datetime.timedelta(seconds=chat.timespan)
+                    # timestamp = f"{start.strftime('%H:%M:%S')}-{stop.strftime('%H:%M:%S')}"
+                    text = f"{'⚡' * chat.count}"
                     try:
                         bot.send_message(chat.chat_id, text, parse_mode="HTML")
                     except Exception as e:
