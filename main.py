@@ -100,7 +100,6 @@ chats = Chats()
 
 
 def prepare(b):
-    # a = None
     e = {}
     d = list(b)
     c = d[0]
@@ -213,6 +212,11 @@ def set_timespan(message):
     bot.send_message(message.chat.id, "Виберіть проміжок часу", reply_markup=keyboard)
 
 
+@bot.message_handler(commands=['help'])
+def send_help(message):
+    bot.send_message(message.chat.id, "Цей чатбот дозволяє вам отримувати положення близьких блискавок.")
+
+
 @bot.message_handler(content_types=['text'])
 def send_text(message):
     session = Session()
@@ -253,11 +257,6 @@ def add_location(message):
     session.close()
 
 
-@bot.message_handler(commands=['help'])
-def send_help(message):
-    bot.reply_to(message, "Цей чатбот дозволяє вам отримувати положення близьких блискавок.")
-
-
 def tg_summary():
     while True:
         time.sleep(5)
@@ -283,7 +282,6 @@ def tg_summary():
             else:
                 print(chat.chat_id, 'not time')
         chats.get_from_base()
-
 
 
 async def ws_loop():
@@ -315,6 +313,7 @@ def wss_client():
     asyncio.set_event_loop(loop)
     loop.run_until_complete(ws_loop())
     loop.close()
+
 
 def main():
     tg_thread = threading.Thread(target=bot.infinity_polling)
