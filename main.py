@@ -1,16 +1,16 @@
 import datetime
-import json
 import re
 import threading
 import time
-
 import asyncio
+import json
+
+import websockets
+from geopy import distance
 
 import pytz
 import telebot
 from telebot import types
-import websockets
-from geopy import distance
 from sqlalchemy import Column, Integer, Float, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from timezonefinder import TimezoneFinder
@@ -19,7 +19,6 @@ import settings as s
 
 engine = create_engine(s.DATABASE.DB_URL, echo=True)
 Base = declarative_base()
-
 
 """
 start - Розпочати
@@ -101,7 +100,7 @@ chats = Chats()
 
 
 def prepare(b):
-    a = None
+    # a = None
     e = {}
     d = list(b)
     c = d[0]
@@ -130,10 +129,11 @@ def info(message):
     chat_id = message.chat.id
     chat = session.query(Chat).filter(Chat.chat_id == chat_id).first()
     if chat is None:
-        bot.send_message(chat_id, 'Вы не зарегистрированы в боте')
+        bot.send_message(chat_id, 'Вы не зареєстровані у боті')
         return
     bot.send_message(chat_id,
-                     f"Ви отримуєте інформацію про кількість блискавок у радіусі {str(chat.radius)}км від наступної точки кожні {str(chat.timespan)} секунд")
+                     f"Ви отримуєте інформацію про кількість блискавок у радіусі {str(chat.radius)}км від наступної "
+                     f"точки кожні {str(chat.timespan)} секунд")
     bot.send_location(chat_id, chat.lat, chat.lon, horizontal_accuracy=chat.radius * 1000)
     session.close()
 
@@ -144,7 +144,7 @@ def send_map(message):
     chat_id = message.chat.id
     chat = session.query(Chat).filter(Chat.chat_id == chat_id).first()
     if chat is None:
-        bot.send_message(chat_id, 'Вы не зарегистрированы в боте')
+        bot.send_message(chat_id, 'Вы не зареєстровані у боті')
         return
     bot.send_message(chat_id, text=f"<a href='https://map.blitzortung.org/#10/{chat.lat}/{chat.lon}'>🗺</a>",
                      parse_mode="HTML")
@@ -173,7 +173,8 @@ def utc_to_local(utc_dt, lat, lng):
 
 def request_location(chat_id, message):
     bot.send_message(message.chat.id,
-                     'Задайте, будь ласка локацію, за допомогою повідомлення "Поділитись локацією", або надійслати своє розташування на карті 📍')
+                     'Встановіть локацію за допомогою повідомлення "Поділитись локацією", або відправте '
+                     'своє розташування як повідомлення')
     keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
     button_geo = types.KeyboardButton(text='Поділитись локацією', request_location=True)
     keyboard.add(button_geo)
@@ -192,13 +193,11 @@ def set_location(message):
 def set_radius(message):
     chat_id = message.chat.id
     print(chat_id)
-    bot.send_message(message.chat.id, 'Задайте, будь ласка радіус відстані, за допомогою клавіатури')
+    bot.send_message(message.chat.id, 'Встановіть радіус охоплення')
     keyboard = types.ReplyKeyboardMarkup(row_width=4, resize_keyboard=True)
-    button_1 = types.KeyboardButton(text="5км")
-    button_2 = types.KeyboardButton(text="10км")
-    button_3 = types.KeyboardButton(text="50км")
-    button_4 = types.KeyboardButton(text="100км")
-    keyboard.add(button_1, button_2, button_3, button_4)
+    for i in s.OPTIONS.DISTANCES:
+        button = types.KeyboardButton(text=str(i) + s.UOM.DISTANCE)
+        keyboard.add(button)
     bot.send_message(message.chat.id, "Виберіть радіус відстані", reply_markup=keyboard)
 
 
@@ -206,13 +205,11 @@ def set_radius(message):
 def set_timespan(message):
     chat_id = message.chat.id
     print(chat_id)
-    bot.send_message(message.chat.id, 'Задайте, будь ласка проміжок часу, за допомогою клавіатури')
+    bot.send_message(message.chat.id, 'Виберіть проміжок часу оновлення')
     keyboard = types.ReplyKeyboardMarkup(row_width=4, resize_keyboard=True)
-    button_1 = types.KeyboardButton(text="10сек")
-    button_2 = types.KeyboardButton(text="30сек")
-    button_3 = types.KeyboardButton(text="1хв")
-    button_4 = types.KeyboardButton(text="5хв")
-    keyboard.add(button_1, button_2, button_3, button_4)
+    for i in s.OPTIONS.TIMESPANS:
+        button = types.KeyboardButton(text=str(i) + s.UOM.TIME)
+        keyboard.add(button)
     bot.send_message(message.chat.id, "Виберіть проміжок часу", reply_markup=keyboard)
 
 
@@ -221,36 +218,24 @@ def send_text(message):
     session = Session()
     chat = session.query(Chat).filter(Chat.chat_id == message.chat.id).first()
 
-    pattern = re.compile("^(\d)+км$")
-    if pattern.match(message.text):
-        chat.radius = int(message.text[:-2])
-        session.commit()
-        chats.get_from_base()
+    dist_message = re.search(r'^(?P<value>[0-9]+)' + s.UOM.DISTANCE + '$', message.text)
+    time_message = re.search(r'^(?P<value>([0-9]*[.])?[0-9]+)' + s.UOM.TIME + '$', message.text)
+
+    if dist_message:
+        chat.radius = int(dist_message.group('value'))
         bot.send_message(message.chat.id, f"Вибрано радіус відстані {chat.radius}км",
                          reply_markup=types.ReplyKeyboardRemove())
-        session.close()
         return
 
-    pattern = re.compile("^(\d)+сек$")
-    if pattern.match(message.text):
-        chat.timespan = int(message.text[:-3])
-        session.commit()
-        chats.get_from_base()
-        bot.send_message(message.chat.id, f"Вибрано оновлення кожні {chat.timespan} секунд",
-                         reply_markup=types.ReplyKeyboardRemove())
-        session.close()
-        return
-
-    pattern = re.compile("^(\d)+хв$")
-    if pattern.match(message.text):
-        t = int(message.text[:-2])
-        chat.timespan = t * 60
-        session.commit()
-        chats.get_from_base()
+    if time_message:
+        t = float(time_message.group(1))
+        chat.timespan = round(t * 60)
         bot.send_message(message.chat.id, f"Вибрано оновлення кожні {t} хвилин",
                          reply_markup=types.ReplyKeyboardRemove())
-        session.close()
         return
+    session.commit()
+    chats.get_from_base()
+    session.close()
 
 
 @bot.message_handler(content_types=['location'])
@@ -269,9 +254,7 @@ def add_location(message):
 
 
 @bot.message_handler(commands=['help'])
-def send_welcome(message):
-    chat_id = message.chat.id
-    print(chat_id)
+def send_help(message):
     bot.reply_to(message, "Цей чатбот дозволяє вам отримувати положення близьких блискавок.")
 
 
@@ -284,9 +267,10 @@ def tg_summary():
                 print(f"{chat.chat_id}: {chat.lat}/{chat.lon} {chat.count} - {chat.last_update}")
                 if chat.count > 0:
                     start = utc_to_local(chat.last_update, chat.lat, chat.lon)
-                    stop = utc_to_local(chat.last_update + datetime.timedelta(seconds=chat.timespan), chat.lat, chat.lon)
-                    format = '%H:%M:%S' if chat.timespan < 60 else '%H:%M'
-                    timestamp = f"{start.strftime(format)}-{stop.strftime(format)}"
+                    stop = utc_to_local(chat.last_update + datetime.timedelta(seconds=chat.timespan), chat.lat,
+                                        chat.lon)
+                    time_format = '%H:%M:%S' if chat.timespan < 60 else '%H:%M'
+                    timestamp = f"{start.strftime(time_format)}-{stop.strftime(time_format)}"
                     text = f"{'⚡' * chat.count}\n{timestamp}"
                     try:
                         bot.send_message(chat.chat_id, text, parse_mode="HTML")
@@ -299,6 +283,7 @@ def tg_summary():
             else:
                 print(chat.chat_id, 'not time')
         chats.get_from_base()
+
 
 
 async def ws_loop():
@@ -330,7 +315,6 @@ def wss_client():
     asyncio.set_event_loop(loop)
     loop.run_until_complete(ws_loop())
     loop.close()
-
 
 def main():
     tg_thread = threading.Thread(target=bot.infinity_polling)

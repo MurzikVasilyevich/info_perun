@@ -17,3 +17,13 @@ class WEBSOCKET:
 class DEFAULTS:
     TIMESPAN = 60
     RADIUS = 100
+
+
+class OPTIONS:
+    DISTANCES = [5, 10, 50, 100]
+    TIMESPANS = [0.5, 1, 2, 5]
+
+
+class UOM:
+    DISTANCE = "км"
+    TIME = "хв"
