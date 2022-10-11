@@ -22,8 +22,10 @@ class DEFAULTS:
 class OPTIONS:
     DISTANCES = [5, 10, 50, 100]
     TIMESPANS = [0.5, 1, 2, 5]
+    COUNTRIES = ["ua", "bg"]
 
 
 class UOM:
     DISTANCE = "км"
     TIME = "хв"
+
