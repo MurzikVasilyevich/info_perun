@@ -3,9 +3,10 @@ sqlalchemy
 pyTelegramBotAPI
 websockets
 asyncio
+timezonefinder
 pytz
 timezonefinder
-psycopg2 # for postgresql
+# psycopg2 # for postgresql
 pyproj
 windrose
 matplotlib
