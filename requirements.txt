@@ -6,3 +6,9 @@ asyncio
 pytz
 timezonefinder
 psycopg2 # for postgresql
+pyproj
+windrose
+matplotlib
+numpy
+pandas
+geographiclib
